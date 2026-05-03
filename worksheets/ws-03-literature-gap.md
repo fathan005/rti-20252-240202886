@@ -77,39 +77,46 @@ Membandingkan deep learning 2024 dengan decision tree sederhana tanpa justifikas
 ```
 LITERATURE MAPPING
 
-Topik      : ____________________
-Database   : ____________________
-Query      : ____________________
-Tahun      : ____________________
-Hasil awal : ____ paper → Screening → ____ paper final
+Topik      :Sistem Deteksi Anomali Jaringan Berbasis Machine Learning & Deep Learning
+Database   :IEEE Xplore, Computers & Security, Google Scholar
+Query      : ("network anomaly detection" OR "intrusion detection system") AND ("CNN" OR "SVM" OR "deep learning") AND ("real-time")
+Tahun      : 2019–2025
+Hasil awal : 20 paper → Screening → 8 paper final
 
 Literature Matrix (concept-centric):
 
 | Study | Tahun | Method | Data | Result | Limitation |
 |-------|-------|--------|------|--------|------------|
-|       |       |        |      |        |            |
+| Ma, Sun, Cui & Jin| 2021| Kernel SVM | 3 dataset jaringan (tidak spesifik) |Akurasi >99% | Tidak diuji secara real-time; statis  |
+| Altunay & Albayrak |2023|CNN + LSTM (hybrid)|Industrial IoT log|Akurasi tinggi pada IoT|Tidak menggunakan capture paket langsung|
+|Berhane et al.|2023|CNN + SVM (hybrid)|Credit card fraud dataset|Peningkatan akurasi signifikan|Domain berbeda (bukan network traffic)|
+|Alrayes et al.|2024|CNN Channel Attention|NSL-KDD|Akurasi kompetitif|Tidak ada komponen real-time|
+|Al Ghamdi|2023|CNN + SVM (hybrid)|PCAP / Snort log|Performa optimal pasca normalisasi|Tidak menggunakan notifikasi otomatis|
+|Liu & Wang|2023|CNNNSL-KDD|Deteksi anomali real-time|SVM tidak diintegrasikan sebagai classifier|
+|Ogah et al.|2024|Beragam ML|Heterogeneous network data|Perbandingan model ML|Tidak ada deployment real-time|
+|Hadiyani & Handaga |2025|CNN–SVM hybrid + Scapy|NSL-KDD (training) + real-time capture|1958/2323 paket terdeteksi anomali|Lingkungan terkontrol; dataset terbatas|
 
 Pola yang ditemukan:
-  Metode dominan     : ____________________
-  Dataset umum       : ____________________
-  Limitasi berulang  : ____________________
-
+  Metode dominan     : Hybrid deep learning + classical ML (terutama CNN + SVM atau CNN + LSTM)
+  Dataset umum       : NSL-KDD (dipakai mayoritas studi sebagai benchmark)
+  Limitasi berulang  : Hampir semua studi tidak menguji sistem secara real-time dengan capture paket langsung; sebagian besar hanya mengevaluasi performa pada dataset statis
 GAP IDENTIFICATION
 
-Gap 1: [Jenis: performance / method / data / context]
-  Deskripsi    : ____________________
-  Bukti        : ____________________
-  Signifikansi : ____________________
+Gap 1: [Jenis:  Context / Deployment Gap]
+  Deskripsi    : Mayoritas penelitian menguji model pada dataset statis (offline), bukan pada lalu lintas jaringan yang ditangkap langsung secara real-time menggunakan tools seperti Scapy.
+  Bukti        :  Liu & Wang (2023) mengklaim "real-time" tetapi tetap menggunakan dataset NSL-KDD yang pra-rekam; Alrayes et al. (2024) tidak memiliki komponen deployment sama sekali.
+  Signifikansi : Kondisi jaringan nyata bersifat dinamis dan tidak terdistribusi secara ideal seperti benchmark dataset — model yang hanya diuji secara offline belum tentu bekerja pada kondisi operasional.
 
-Gap 2: [Jenis: ____]
-  Deskripsi    : ____________________
-  Bukti        : ____________________
-  Signifikansi : ____________________
+Gap 2: [Jenis: Method Gap]
+  Deskripsi    : Sistem deteksi berbasis rules statis (seperti Snort) tidak mampu mengenali pola serangan yang belum terdokumentasi (zero-day), namun integrasi model ML/DL dengan notifikasi administrator secara otomatis masih sangat jarang diteliti.
+  Bukti        :S, Wahyuddin et al. (2025) menggunakan Snort + Telegram tetapi murni berbasis rules, bukan model yang bisa belajar. Tidak ada studi dalam matriks yang mengombinasikan keduanya (adaptive model + real-time alert).
+  Signifikansi : Kecepatan respons insiden sangat bergantung pada otomasi notifikasi — tanpa ini, deteksi yang akurat sekalipun tidak langsung ditindaklanjuti.
 
 Baseline Selection:
 | Baseline | Relevansi | Representatif | Source |
-|----------|-----------|---------------|--------|
-|          |           |               |        |
+|Kernel SVM (standalone)|Task sama: klasifikasi anomali lalu lintas jaringan|Digunakan sebagai metode perbandingan di banyak studi IDS|Ma et al., 2021|
+
+|  CNN standalone (tanpa SVM) |  Arsitektur CNN untuk deteksi anomali jaringan berbasis NSL-KDD |  Dipakai oleh Liu & Wang (2023) dan Alrayes et al. (2024) |  Liu & Wang, 2023 |
 ```
 
 ---
@@ -123,21 +130,20 @@ Gunakan topik riset dari WS-02. Cari minimal 5 paper relevan menggunakan databas
 > - Tulis query Boolean yang digunakan: contoh `("object detection" OR "image classification") AND ("edge computing") NOT ("medical")`. Dokumentasikan query secara eksplisit.
 > - Akses gratis: buka Google Scholar → cari judul paper → klik [PDF] jika tersedia, atau akses lewat campus VPN
 
-**Topik riset:** ________________________________________
-**Query pencarian:** ____________________________________
-**Database:** ___________________________________________
+**Topik riset:** Deteksi anomali lalu lintas jaringan komputer berbasis hybrid CNN-SVM
+**Query pencarian:** ("network anomaly detection" OR "intrusion detection") AND ("CNN" OR "convolutional neural network") AND ("SVM" OR "support vector machine")
+**Database:** IEEE Xplore, Google Scholar, Computers & Security 
 
 | # | Study | Tahun | Method | Dataset | Result | Limitasi |
 |---|-------|-------|--------|---------|--------|----------|
-| 1 | *Contoh: Rahman et al.* | *2023* | *CNN* | *ImageNet subset* | *Acc 91%* | *Hanya 3 kelas* |
-| 2 | | | | | | |
-| 3 | | | | | | |
-| 4 | | | | | | |
-| 5 | | | | | | |
+| 1 | *Ma, Sun, Cui & Jin* | *2021* | *Kernel SVM* | *3 network datasets* | *Acc >99%* | *Tidak real-time; fitur manual* |
+| 2 |Al Ghamdi |2023 |CNN + SVM |PCAP/Snort log |Optimal pasca normalisasi |Tanpa notifikasi otomatis |
+| 3 |Berhane et al. | 2023| CNN + SVM| Credit card fraud| Akurasi meningkat signifikan| Domain bukan network traffic|
+| 4 |Liu & Wang | 2023|CNN |NSL-KDD |Performa real-time baik |SVM tidak digunakan sebagai classifier akhir |
+| 5 |Alrayes et al. |2024 |CNN Channel Attention |NSL-KDD |Akurasi kompetitif | Tidak ada deployment/real-time testing|
 
-**Pola yang terlihat — Metode dominan:** ___________________
-**Limitasi yang berulang:** ______________________________
-
+**Pola yang terlihat — Metode dominan:**CNN (standalone atau hybrid dengan SVM/LSTM)
+**Limitasi yang berulang:** Tidak ada pengujian real-time dengan capture langsung; bergantung pada dataset benchmark yang mungkin tidak representatif terhadap kondisi jaringan aktual
 ---
 
 ## Latihan 2 — Gap Identification
@@ -146,15 +152,15 @@ Berdasarkan tabel di Latihan 1, identifikasi gap.
 
 | Jenis Gap | Ditemukan? | Gap Statement |
 |-----------|-----------|---------------|
-| Performance Gap | [ ] Ya / [ ] Tidak | *Contoh: Akurasi turun di bawah 80% untuk kelas minoritas* |
-| Method Gap | [ ] Ya / [ ] Tidak | |
-| Data Gap | [ ] Ya / [ ] Tidak | |
-| Context Gap | [ ] Ya / [ ] Tidak | |
+| Performance Gap |  Ya  | *Akurasi SVM standalone menurun pada data tidak seimbang atau high-dimensional tanpa feature extraction otomatis* |
+| Method Gap |  Ya   | Belum ada studi yang mengintegrasikan CNN-SVM dengan pipeline notifikasi real-time (Telegram Bot) untuk respons insiden|
+| Data Gap |  Ya  | Hampir semua studi menggunakan NSL-KDD yang statis — tidak ada studi yang menggabungkan NSL-KDD (training) dengan capture traffic langsung (testing)|
+| Context Gap | Ya  |Studi sebelumnya tidak menguji sistem pada skenario simulasi serangan multi-attacker dalam jaringan DHCP nyata |
 
-**Gap utama yang dipilih:** _____________________________
+**Gap utama yang dipilih:**Data + Context Gap — penggunaan data training statis (NSL-KDD) dikombinasikan dengan pengujian pada traffic yang ditangkap langsung secara real-time dari simulasi serangan nyata.
+
 **Mengapa gap ini penting (bukan sekadar "belum ada yang meneliti")?**
-> ___________________________________________________
-
+> Sistem IDS hanya berguna jika terbukti bekerja pada kondisi operasional, bukan hanya pada benchmark. Jika model tidak pernah diuji pada traffic nyata, kita tidak tahu apakah distribusi fitur dari dataset pelatihan relevan dengan kondisi aktual jaringan yang diserang.
 ---
 
 ## Latihan 3 — Baseline Selection
@@ -163,11 +169,11 @@ Pilih 2 baseline dari literatur yang sudah dibaca.
 
 | # | Baseline | Mengapa Relevan | Mengapa Representatif | Apakah SOTA? | Sumber |
 |---|----------|----------------|----------------------|-------------|--------|
-| 1 | *Contoh: RF + TF-IDF* | *Task sama: klasifikasi teks* | *Dipakai 6 dari 10 paper* | *Bukan, tapi common practice* | *Lee et al., 2022* |
-| 2 | | | | | |
+| 1 | *Kernel SVM (standalone)* | *Task identik: klasifikasi anomali jaringan* | *Dipakai sebagai pembanding di mayoritas paper IDS* | *Tidak, tapi strong baseline* | *Ma et al., 2021* |
+| 2 |CNN standalone + NSL-KDD |Arsitektur dan dataset sama dengan paper ini |Digunakan di Liu & Wang (2023) dan Alrayes et al. (2024) |Mendekati SOTA untuk NSL-KDD | Liu & Wang, 2023|
 
 **Apakah pemilihan baseline ini bisa dianggap straw man?** [ ] Ya / [ ] Tidak
-> Justifikasi: ________________________________________
+> Justifikasi: Ya — karena kedua baseline ini merupakan metode yang benar-benar kompetitif dan banyak dikutip, bukan metode lemah yang sengaja dipilih agar hasil terlihat bagus.
 
 ---
 
@@ -176,5 +182,6 @@ Pilih 2 baseline dari literatur yang sudah dibaca.
 > Apa perbedaan antara "belum ada yang meneliti ini" (klaim tanpa bukti) dengan research gap yang valid? Bagaimana cara membuktikan bahwa sebuah gap benar-benar ada?
 
 **Jawaban:**
-> ___________________________________________________
-> ___________________________________________________
+>Klaim "belum ada yang meneliti" adalah argument from ignorance — sekadar menyatakan ketiadaan tanpa membuktikan bahwa ketiadaan tersebut penting. Gap yang valid harus menunjukkan tiga hal: (1) ada masalah nyata yang belum terpecahkan, (2) literatur yang ada terbukti tidak menyelesaikannya, dan (3) menyelesaikan gap tersebut memberi nilai praktis atau teoritis yang konkret.
+> Cara membuktikan bahwa gap benar-benar ada:
+Lakukan analisis sistematis terhadap literatur yang ada — bukan hanya membaca abstrak, tetapi memeriksa experimental setup dan limitation section setiap paper. Jika 5 dari 6 paper mengakui "we did not test on live traffic" dalam bagian limitasi mereka, itu adalah bukti empiris dari gap, bukan sekadar klaim. Seperti pada paper ini: gap real-time deployment dibuktikan dengan menunjukkan bahwa Liu & Wang (2023) menggunakan dataset pra-rekam meski mengklaim "real-time", dan tidak ada studi sebelumnya yang mengombinasikan Scapy capture + hybrid model + notifikasi otomatis dalam satu pipeline.
