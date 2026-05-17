@@ -80,25 +80,35 @@ Jika variabel tidak bisa di-map ke komponen apapun → arsitektur perlu didesain
 ```
 SYSTEM-EXPERIMENT MAPPING
 
-Research Question: ____________________
+Research Question:Apakah model hybrid CNN–SVM yang dilatih pada dataset NSL-KDD menghasilkan akurasi dan F1-Score lebih tinggi dibandingkan SVM standalone dalam mendeteksi anomali lalu lintas jaringan yang ditangkap secara real-time menggunakan Scapy pada skenario simulasi serangan multi-attacker?
 
 Variable → Component Mapping:
 | Variabel | Tipe | Komponen Sistem | Cara Manipulasi/Pengukuran |
 |----------|------|-----------------|---------------------------|
-|          | IV   |                 |                           |
-|          | DV   |                 |                           |
-|          | CV   |                 |                           |
+|Jenis model deteksi | IV   |Modul classifier — model_loader.py | Ganti config model_type = "cnn_svm" | "svm_only". CNN–SVM: feature extraction via Conv1D → flatten → SVM. SVM standalone: fitur manual langsung ke SVM.|
+
+|Akurasi & F1-Score klasifikasi| DV   |Modul evaluasi — metrics.py | Dihitung otomatis dari confusion matrix setiap akhir interval 5 menit menggunakan sklearn.metrics. Output disimpan ke log CSV dan dikirim via Telegram Bot.|
+
+|Dataset pelatihan (NSL-KDD)| CV   |Modul preprocessing — preprocessor.py| Dataset di-load sekali saat inisiasi. Versi file dikunci (hash MD5 dicatat). Kedua model (CNN–SVM dan SVM standalone) menggunakan preprocessor.transform() yang identik.|
 
 4 Prinsip Desain:
-  [ ] Traceability — Setiap komponen bisa ditelusuri ke variabel
-  [ ] Variable Isolation — IV bisa diubah tanpa mengubah CV
-  [ ] Measurement Integration — Pengukuran DV built-in
-  [ ] Reproducibility — Setup bisa direkonstruksi
+  [ ya] Traceability— Setiap komponen sistem berlabel variabel:
+model_loader
+= IV,
+metrics.py
+= DV,
+preprocessor
+= CV. Log output menyertakan nama model aktif di setiap baris.
+
+  [ ya] Variable Isolation— IV (jenis model) dapat diganti hanya dengan mengubah satu config flag tanpa menyentuh modul preprocessing, capture, atau pelaporan.
+
+  [ya ] Measurement Integration— Pengukuran DV built-in di dalam pipeline: setiap batch 5 menit otomatis menghasilkan confusion matrix dan dikirim ke Telegram.
+  [ya ] Reproducibility— Setup dapat direkonstruksi: script serangan tetap, dataset dikunci via hash, testbed fisik terdokumentasi, kode tersedia di GitHub.
 
 Experimental Setup:
-  Input data     : ____________________
-  Parameter      : ____________________
-  Output format  : ____________________
+  Input data     : Training: NSL-KDD (CSV, versi tetap); Testing: paket TCP real-time dari scapy capture pada interface jaringan DHCP testbed
+  Parameter      : Interval pelaporan: 5 menit; batch size capture: semua paket dalam window; model: CNN–SVM hybrid vs SVM standalone; fitur: timestamp, IP src, IP dst, protocol, flag TCP
+  Output format  : Log CSV per interval (waktu, IP sumber, IP tujuan, layanan, flag, label); bar chart top-5 anomali; notifikasi Telegram Bot; file laporan periodik
 ```
 
 ---
@@ -107,17 +117,18 @@ Experimental Setup:
 
 Gunakan RQ dan variabel dari WS-05. Petakan ke komponen sistem.
 
-**RQ:** __________________________________________________
+**RQ:** Apakah model hybrid CNN–SVM yang dilatih pada dataset NSL-KDD menghasilkan akurasi dan F1-Score lebih tinggi dibandingkan SVM standalone dalam mendeteksi anomali lalu lintas jaringan yang ditangkap secara real-time menggunakan Scapy pada skenario simulasi serangan multi-attacker?
 
 | Variabel | Tipe | Komponen Sistem | Cara Manipulasi / Pengukuran |
 |----------|------|-----------------|---------------------------|
-| *Contoh: Jenis model* | *IV* | *Modul classifier (swap RF ↔ CNN)* | *Ganti config `model_type`* |
-| | DV | | |
-| | CV | | |
+|Jenis model deteksi anomali | *IV* | Modul classifier — swap CNN–SVM ↔ SVM standalone via config flag | Ubah satu baris: model_type = "cnn_svm" atau "svm_only". Semua modul lain tidak berubah.|
 
-**Apakah semua variabel bisa di-map?** [ ] Ya / [ ] Tidak
-> Jika tidak, komponen apa yang perlu ditambahkan? _________
+|Akurasi & F1-Score klasifikasi anomali | DV |Modul evaluasi (metrics.py) — otomatis dijalankan di akhir setiap batch |Dihitung dari confusion matrix: TP, TN, FP, FN per 5 menit. Disimpan ke CSV dan dikirim Telegram.|
 
+|Dataset pelatihan NSL-KDD | CV |Modul preprocessing (preprocessor.py) — dijalankan sekali saat init | File dikunci (hash MD5). Normalisasi MinMax + one-hot encoding identik untuk kedua model. Tidak diubah antar sesi.|
+
+**Apakah semua variabel bisa di-map?** Ya 
+> Jika tidak, komponen apa yang perlu ditambahkan? Semua variabel berhasil di-map ke komponen sistem. Tidak ada variabel yang "menggantung" tanpa representasi teknis. Komponen yang ada sudah mencukupi untuk menjalankan eksperimen perbandingan IV tanpa modifikasi CV.
 ---
 
 ## Latihan 2 — 4 Prinsip Desain
@@ -126,15 +137,18 @@ Evaluasi desain sistem terhadap 4 prinsip.
 
 | Prinsip | Status | Bukti / Penjelasan |
 |---------|--------|-------------------|
-| Traceability | *Contoh: ✅ — setiap modul punya label variabel* | |
-| Modularity | | |
-| Controllability | | |
-| Measurability | | |
+| Traceability |Terpenuhi |Setiap modul dalam pipeline berlabel variabel: model_loader.py → IV, metrics.py → DV akurasi, reporter.py → DV jumlah anomali, preprocessor.py → CV dataset, attack_script.sh → CV serangan. Log output menyertakan nama model aktif di setiap baris sehingga hasil dapat ditelusuri balik ke kondisi eksperimen. |
 
-**Prinsip mana yang paling sulit dipenuhi?** _______________
+| Modularity |Terpenuhi |Arsitektur terbagi ke modul terpisah: capture (scapy) → preprocessing → feature extraction (CNN atau manual) → classification (SVM) → evaluation → reporting. IV dapat diganti (swap model) hanya dengan mengubah satu config flag, tanpa menyentuh modul capture, preprocessing, atau Telegram Bot — ini bukti modularity yang baik. |
+
+| Controllability |Sebagian |CV yang bersifat software (dataset, script serangan) mudah dikontrol. Namun CV hardware (spesifikasi PC, kondisi jaringan DHCP, beban sistem OS saat simulasi) sulit dikontrol sepenuhnya — fluktuasi CPU usage atau buffer OS saat SYN Flood dapat mempengaruhi jumlah paket yang berhasil di-capture. Ini adalah titik lemah utama controllability. |
+
+| Measurability |Terpenuhi |Pengukuran DV built-in di pipeline: confusion matrix dihitung otomatis tiap 5 menit, disimpan ke CSV, divisualisasikan, dan dikirim via Telegram Bot. Tidak ada langkah pengukuran manual yang bisa menimbulkan human error. Format output terstruktur (log tabel + bar chart) memudahkan analisis pasca-eksperimen. |
+
+**Prinsip mana yang paling sulit dipenuhi?**Variabel CV hardware tidak dapat dikontrol penuh — beban CPU, kondisi buffer jaringan, dan fluktuasi OS saat SYN Flood berlangsung dapat memvariasikan jumlah paket yang berhasil di-capture antar sesi. Strategi: (1) jalankan setiap kondisi eksperimen 3 kali dan ambil rata-rata; (2) monitor CPU & memory usage secara paralel selama eksperimen menggunakan htop atau psutil; (3) catat jumlah paket yang di-capture vs yang dihasilkan attacker sebagai indikator completeness.
+
 **Strategi untuk mengatasinya:**
-> ___________________________________________________
-
+> replikasi 3x per kondisi + monitoring resource paralel.
 ---
 
 ## Latihan 3 — Ablation Study Planning
@@ -146,15 +160,17 @@ Jika sistem memiliki 3 komponen utama, rencanakan ablation study.
 
 | Kondisi | Komponen A | Komponen B | Komponen C | Hasil yang Diharapkan |
 |---------|-----------|-----------|-----------|----------------------|
-| Full | *Contoh: ✅ CNN* | *Contoh: ✅ Temporal features* | *Contoh: ✅ Z-score norm* | *Baseline penuh* |
-| – A | ❌ (ganti RF) | ✅ | ✅ | |
-| – B | ✅ | ❌ (tanpa temporal) | ✅ | |
-| – C | ✅ | ✅ | ❌ (tanpa normalisasi) | |
+| Full | ✅ CNN Conv1D | ✅ MinMax + one-hot | ✅ serror_rate, rerror_rate, srv_error_rate|Performa tertinggi — CNN mengekstrak fitur spasial, preprocessing menstabilkan skala, sliding-window menangkap pola temporal serangan |
 
-**Komponen mana yang diprediksi paling berkontribusi?** _____
+| – A | ❌ Ganti dengan fitur manual (tanpa CNN)| ✅ | ✅ |Penurunan F1-Score karena fitur yang masuk SVM lebih sederhana dan tidak hierarkis — ini mengukur kontribusi CNN sebagai feature extractor |
+
+| – B | ✅ | ❌ Tanpa normalisasi (raw features)| ✅ | Penurunan akurasi signifikan karena CNN kesulitan belajar dari fitur berskala sangat berbeda (durasi 0–58329 vs flag biner 0/1). Diperkirakan menjadi kondisi terburuk.|
+
+| – C | ✅ | ✅ | ❌ Tanpa sliding-window (hanya fitur per-paket statis) |Penurunan kemampuan deteksi pola serangan berkelanjutan (SYN Flood) — model gagal mengenali bahwa banyak koneksi berurutan dari IP yang sama adalah anomali, bukan insiden tunggal |
+
+**Komponen mana yang diprediksi paling berkontribusi?**Komponen A (CNN feature extractor)
 **Mengapa?**
-> ___________________________________________________
-
+>  Ini adalah inti dari novelty penelitian — CNN memungkinkan SVM menerima representasi fitur hierarkis yang lebih kaya tanpa feature engineering manual. Jika kondisi –A menunjukkan penurunan F1-Score yang besar, ini membuktikan klaim kontribusi utama paper. Kondisi –A, –C secara khusus berguna karena hasilnya dapat langsung dibandingkan dengan SVM standalone sebagai baseline dari WS-04.
 ---
 
 ## Refleksi
@@ -162,5 +178,5 @@ Jika sistem memiliki 3 komponen utama, rencanakan ablation study.
 > Apa risiko jika sistem dibangun seperti produk (monolitik, fitur lengkap) lalu baru dilakukan eksperimen? Mengapa arsitektur modular penting untuk riset?
 
 **Jawaban:**
-> ___________________________________________________
-> ___________________________________________________
+> Jika sistem dibangun seperti produk — fitur lengkap, semua komponen terintegrasi erat — maka ketika hasil eksperimen tidak sesuai harapan, peneliti tidak bisa mendiagnosis komponen mana yang bermasalah. Dalam konteks penelitian ini: jika sistem CNN–SVM monolitik menghasilkan F1 rendah, apakah masalahnya di arsitektur CNN, di normalisasi data, atau di sliding-window features? Tidak bisa diketahui. Ini memaksa peneliti untuk menebak perbaikan, bukan menganalisisnya secara sistematis.
+> Bahaya kedua: sistem monolitik sulit direproduksi. Jika preprocessing, feature extraction, dan classification bercampur dalam satu fungsi, peneliti lain tidak bisa mengganti hanya satu komponen untuk memverifikasi klaim. Ini melanggar prinsip falsifiability dari WS-04 — klaim "CNN-SVM lebih baik dari SVM" tidak dapat diuji secara terisolasi.
